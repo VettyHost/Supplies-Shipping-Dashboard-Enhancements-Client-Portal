@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplies & Shipping Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+        /* Timeline styling for History Modal */
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 24px;
+            bottom: 0;
+            width: 2px;
+            background-color: #e5e7eb;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: white;
+            border: 2px solid #e5e7eb;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="max-w-[1600px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200 min-h-[80vh] flex flex-col">
+        
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-100 text-center">
+            <h1 class="text-2xl font-semibold text-gray-800">Supplies & Shipping Dashboard</h1>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="p-4 bg-gray-50 border-b border-gray-200">
+            <div class="flex flex-wrap gap-3 items-end">
+                <!-- Filters (Same as before) -->
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Filter:</label>
+                    <input type="text" id="filterOrderId" placeholder="Order Id" class="w-full px-3 py-2 text-sm border border-gray-300 rounded hover:border-gray-400 focus:outline-none focus:border-blue-500 transition-colors">
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filterCategory" class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="">Supply Category</option>
+                        <option value="On-Site Drug">On-Site Drug</option>
+                        <option value="Maskfit">Maskfit</option>
+                        <option value="Office Supplies">Office Supplies</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filterProduct" class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="">Product Name</option>
+                        <option value="5 Panel Drug">5 Panel Drug</option>
+                        <option value="7 Panel Drug">7 Panel Drug</option>
+                        <option value="N95 Mask">N95 Mask</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filterLocation" class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="">Location</option>
+                        <option value="Corporate">Corporate</option>
+                        <option value="Pune">Pune</option>
+                        <option value="Remote">Remote</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filterStatus" class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="">Status</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Ordered">Ordered</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 mt-2 md:mt-0">
+                    <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors shadow-sm">Search</button>
+                    <button onclick="clearFilters()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors shadow-sm">Clear Filters</button>
+                    <button class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap">Place New Order</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-container overflow-x-auto flex-grow">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Order ID</th>
+                        <!-- MOVED COLUMN: Candidate Name is now 2nd -->
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100 bg-blue-50 text-blue-600">Candidate Name</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Supply Category</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Product Name</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100 w-16">Units</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Location</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Shipping Address</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Tracking Number</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Ordered Date</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Status</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Action</th>
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Ordered By</th>
+                        <!-- NEW COLUMN: Order History -->
+                        <th class="p-3 font-semibold whitespace-nowrap border-r border-gray-100">Order History</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-sm text-gray-700 divide-y divide-gray-100">
+                    <!-- Rows inserted by JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex justify-between items-center">
+            <span>Showing 4 of 4 entries</span>
+            <div class="flex gap-1">
+                <button class="px-2 py-1 border rounded bg-white disabled:opacity-50" disabled>Prev</button>
+                <button class="px-2 py-1 border rounded bg-blue-50 text-blue-600 border-blue-200">1</button>
+                <button class="px-2 py-1 border rounded bg-white disabled:opacity-50" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-gray-100">
+                <h2 class="text-xl font-semibold text-gray-800 text-center">Edit Order</h2>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                
+                <!-- Candidate Name (Read Only) -->
+                <div id="modalCandidateField">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Candidate Name (Read Only)</label>
+                    <input type="text" id="editCandidateName" readonly class="w-full px-3 py-2 text-sm bg-gray-100 border border-gray-300 rounded text-gray-500 cursor-not-allowed">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Supplies Category<span class="text-red-500">*</span></label>
+                    <select id="editCategory" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none">
+                        <option value="On-Site Drug">On-Site Drug</option>
+                        <option value="Maskfit">Maskfit</option>
+                        <option value="Office Supplies">Office Supplies</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Product Name<span class="text-red-500">*</span></label>
+                    <select id="editProduct" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none">
+                        <option value="5 Panel Drug">5 Panel Drug</option>
+                        <option value="7 Panel Drug">7 Panel Drug</option>
+                        <option value="N95 Mask">N95 Mask</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Units(each unit contains '5' kits)<span class="text-red-500">*</span></label>
+                    <input type="number" id="editUnits" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Location<span class="text-red-500">*</span></label>
+                    <select id="editLocation" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none">
+                        <option value="Corporate">Corporate</option>
+                        <option value="Pune">Pune</option>
+                        <option value="Remote">Remote</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Shipping Address<span class="text-red-500">*</span></label>
+                    <textarea id="editAddress" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none resize-none"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Notes</label>
+                    <textarea id="editNotes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-5 border-t border-gray-100 flex justify-between items-center bg-gray-50 rounded-b-lg">
+                <button onclick="closeModal('editModal')" class="px-4 py-2 text-blue-600 border border-blue-600 rounded text-sm font-medium hover:bg-blue-50 transition-colors">
+                    Cancel Order
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('editModal')" class="px-4 py-2 bg-gray-500 text-white rounded text-sm font-medium hover:bg-gray-600 transition-colors">
+                        Close
+                    </button>
+                    <button onclick="saveOrder()" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all">
+            <div class="p-6 text-center">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Order History</h2>
+                
+                <!-- Timeline Container -->
+                <div id="historyTimeline" class="text-left mb-6 pl-2">
+                    <!-- Timeline items injected by JS -->
+                </div>
+
+                <button onclick="closeModal('historyModal')" class="px-8 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors">
+                    Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Enhanced Mock Data with History
+        const initialData = [
+            {
+                id: "ODRGT-202503-Tkl8",
+                category: "On-Site Drug",
+                product: "5 Panel Drug",
+                units: 78,
+                location: "Corporate",
+                address: "Tttf",
+                tracking: "-",
+                date: "03/25/2025",
+                status: "Delivered",
+                orderedBy: "The Vetty Team",
+                candidateName: "Michael Scott",
+                notes: "Urgent delivery",
+                history: [
+                    { status: "Delivered", date: "03/26/2025", desc: "The Vetty Team updated the status to Delivered" },
+                    { status: "Ordered", date: "03/25/2025", desc: "The Vetty Team placed an order. Status updated to Ordered" }
+                ]
+            },
+            {
+                id: "ODRGT-202503-Y4a2",
+                category: "On-Site Drug",
+                product: "7 Panel Drug",
+                units: 85,
+                location: "Pune",
+                address: "Test",
+                tracking: "-",
+                date: "03/25/2025",
+                status: "Ordered",
+                orderedBy: "The Vetty Team",
+                candidateName: "Jim Halpert",
+                notes: "",
+                history: [
+                    { status: "Ordered", date: "03/25/2025", desc: "The Vetty Team placed an order. Status updated to Ordered" }
+                ]
+            },
+            {
+                id: "ODRGT-202503-M9j2",
+                category: "Maskfit",
+                product: "N95 Mask",
+                units: 12,
+                location: "Corporate",
+                address: "Main Building",
+                tracking: "TRK-8821",
+                date: "03/24/2025",
+                status: "Delivered",
+                orderedBy: "HR Dept",
+                candidateName: "Sarah Connor",
+                notes: "Handle with care",
+                history: [
+                    { status: "Delivered", date: "03/25/2025", desc: "HR Dept updated the status to Delivered" },
+                    { status: "Pending", date: "03/24/2025", desc: "Order request created" }
+                ]
+            },
+            {
+                id: "ODRGT-202503-K992",
+                category: "Maskfit",
+                product: "N95 Mask",
+                units: 1,
+                location: "Remote",
+                address: "123 Elm St",
+                tracking: "TRK-1102",
+                date: "03/26/2025",
+                status: "Pending",
+                orderedBy: "Recruiting",
+                candidateName: "John Wick",
+                notes: "Gate code 1234",
+                history: [
+                    { status: "Pending", date: "03/26/2025", desc: "Recruiting placed an order. Status Pending approval" }
+                ]
+            }
+        ];
+
+        // 2. Render Function
+        function renderTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="14" class="p-4 text-center text-gray-500">No records found</td></tr>';
+                return;
+            }
+
+            data.forEach(row => {
+                // Logic for Candidate Name Column (Table)
+                let displayCandidateName = row.candidateName;
+                let candidateCellClass = "";
+                if (row.category !== "Maskfit") {
+                    displayCandidateName = ''; // Blank if not Maskfit
+                } else {
+                    candidateCellClass = "font-medium text-gray-800 bg-blue-50";
+                }
+
+                // Logic for Edit Button (Disabled if Delivered)
+                const isDelivered = row.status === "Delivered";
+                const editBtnClass = isDelivered 
+                    ? "text-gray-400 cursor-not-allowed" 
+                    : "text-blue-600 hover:text-blue-800 underline cursor-pointer";
+                const editBtnAttr = isDelivered ? "disabled" : `onclick="openEditModal('${row.id}')"`;
+
+                // Status Badge
+                let statusClass = "";
+                if(row.status === "Delivered") statusClass = "bg-green-400 text-white";
+                else if(row.status === "Ordered") statusClass = "bg-blue-600 text-white";
+                else statusClass = "bg-yellow-400 text-white";
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors group";
+
+                tr.innerHTML = `
+                    <td class="p-3 border-r border-gray-100 font-medium text-gray-700 whitespace-nowrap" title="${row.id}">${row.id.substring(0, 14)}...</td>
+                    
+                    <!-- 2nd Column: Candidate Name -->
+                    <td class="p-3 border-r border-gray-100 ${candidateCellClass}">${displayCandidateName}</td>
+                    
+                    <td class="p-3 border-r border-gray-100">${row.category}</td>
+                    <td class="p-3 border-r border-gray-100 font-medium">${row.product}</td>
+                    <td class="p-3 border-r border-gray-100 text-center">${row.units}</td>
+                    <td class="p-3 border-r border-gray-100">${row.location}</td>
+                    <td class="p-3 border-r border-gray-100 truncate max-w-[100px]">${row.address}</td>
+                    <td class="p-3 border-r border-gray-100 text-center">${row.tracking}</td>
+                    <td class="p-3 border-r border-gray-100">${row.date}</td>
+                    <td class="p-3 border-r border-gray-100">
+                        <span class="px-3 py-1 rounded text-xs font-semibold ${statusClass}">${row.status}</span>
+                    </td>
+                    <td class="p-3 border-r border-gray-100 text-center">
+                        <button class="${editBtnClass} text-xs" ${editBtnAttr}>Edit</button>
+                    </td>
+                    <td class="p-3 border-r border-gray-100 text-xs">${row.orderedBy}</td>
+                    
+                    <!-- New Column: Order History -->
+                    <td class="p-3 border-r border-gray-100 text-center">
+                        <button onclick="openHistoryModal('${row.id}')" class="text-blue-600 hover:text-blue-800 underline text-xs">Order History</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 3. Modal Functions
+        function openEditModal(id) {
+            const row = initialData.find(item => item.id === id);
+            if (!row) return;
+
+            // Populate basic fields
+            document.getElementById('editCategory').value = row.category;
+            document.getElementById('editProduct').value = row.product;
+            document.getElementById('editUnits').value = row.units;
+            document.getElementById('editLocation').value = row.location;
+            document.getElementById('editAddress').value = row.address;
+            document.getElementById('editNotes').value = row.notes || "";
+
+            // Logic for Candidate Name in Modal
+            const candidateFieldDiv = document.getElementById('modalCandidateField');
+            const candidateInput = document.getElementById('editCandidateName');
+            
+            if (row.category === "Maskfit") {
+                candidateFieldDiv.style.display = "block";
+                candidateInput.value = row.candidateName;
+            } else {
+                // Hide or clear? User said "non editable for those present". 
+                // I'll hide it if not relevant, to keep form clean, or show blank. 
+                // Let's show blank disabled to match "rest prefilled editable" context structure if desired, 
+                // but usually irrelevant fields are hidden. 
+                // I will hide it for non-Maskfit to reduce clutter, as user implied "for those present".
+                candidateFieldDiv.style.display = "none"; 
+                candidateInput.value = "";
+            }
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function openHistoryModal(id) {
+            const row = initialData.find(item => item.id === id);
+            if (!row) return;
+
+            const timelineContainer = document.getElementById('historyTimeline');
+            timelineContainer.innerHTML = '';
+
+            row.history.forEach((event, index) => {
+                // Determine colors based on status
+                let dotColor = "border-blue-500"; // default blue outline
+                let statusColor = "text-blue-600";
+                
+                if (event.status === "Delivered") {
+                    dotColor = "border-green-400";
+                    statusColor = "text-green-400";
+                } else if (event.status === "Ordered") {
+                    dotColor = "border-blue-600"; 
+                }
+
+                const itemHtml = `
+                    <div class="timeline-item">
+                        <div class="timeline-dot ${dotColor}"></div>
+                        <div class="${statusColor} font-semibold text-sm">${event.status}</div>
+                        <div class="text-xs text-gray-600 mt-1">
+                            ${event.desc} on <span class="font-medium">${event.date}</span>
+                        </div>
+                    </div>
+                `;
+                timelineContainer.innerHTML += itemHtml;
+            });
+
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function saveOrder() {
+            // Mock save functionality
+            closeModal('editModal');
+            alert("Changes saved successfully (Mock)");
+        }
+
+        // 4. Filter Functions (Kept from previous version)
+        function applyFilters() {
+            const idVal = document.getElementById('filterOrderId').value.toLowerCase();
+            const catVal = document.getElementById('filterCategory').value;
+            const prodVal = document.getElementById('filterProduct').value;
+            const locVal = document.getElementById('filterLocation').value;
+            const statVal = document.getElementById('filterStatus').value;
+
+            const filteredData = initialData.filter(item => {
+                return (
+                    (!idVal || item.id.toLowerCase().includes(idVal)) &&
+                    (!catVal || item.category === catVal) &&
+                    (!prodVal || item.product === prodVal) &&
+                    (!locVal || item.location === locVal) &&
+                    (!statVal || item.status === statVal)
+                );
+            });
+
+            renderTable(filteredData);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterOrderId').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterProduct').value = '';
+            document.getElementById('filterLocation').value = '';
+            document.getElementById('filterStatus').value = '';
+            renderTable(initialData);
+        }
+
+        // Initial Render
+        renderTable(initialData);
+
+    </script>
+</body>
+</html>
